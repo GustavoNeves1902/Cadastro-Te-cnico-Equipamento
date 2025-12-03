@@ -129,12 +129,26 @@ export default function App() {
     return nome.includes(termo) || codigo.includes(termo);
   });
 
+  // ATUALIZADO: Agora filtra também pelos campos de endereço
   const fabricantesFiltrados = fabricantes.filter((f) => {
     const s = search.toLowerCase();
     const nome = f.nome ? f.nome.toLowerCase() : "";
     const codigo = f.codigo ? f.codigo.toLowerCase() : "";
+    const cnpj = f.cnpj ? f.cnpj.toLowerCase() : "";
+    
+    // Verificações de endereço
+    const logradouro = f.endereco?.logradouro ? f.endereco.logradouro.toLowerCase() : "";
+    const cidade = f.endereco?.cidade ? f.endereco.cidade.toLowerCase() : "";
+    const estado = f.endereco?.estado ? f.endereco.estado.toLowerCase() : "";
 
-    return nome.includes(s) || codigo.includes(s);
+    return (
+        nome.includes(s) || 
+        codigo.includes(s) || 
+        cnpj.includes(s) ||
+        logradouro.includes(s) ||
+        cidade.includes(s) ||
+        estado.includes(s)
+    );
   });
 
   // Funções de Cadastro
@@ -462,7 +476,7 @@ export default function App() {
 
                 <input
                   className="w-full p-3 mb-4 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-200 outline-none"
-                  placeholder="🔍 Pesquisar fabricante..."
+                  placeholder="🔍 Pesquisar por nome, código ou endereço..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
