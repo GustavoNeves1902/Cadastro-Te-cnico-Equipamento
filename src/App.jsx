@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
 
 // --- DADOS MOCKADOS (Carregados inicialmente) ---
-// Endereços (agora centralizados)
+// Endereços (agora sem número/complemento — só os campos globais)
 const enderecosMock = [
   {
     id: 1,
     logradouro: "Rua Tech",
-    numero: "123",
-    complemento: "Sala 01",
     cidade: "São Paulo",
     estado: "SP",
     cep: "01000-000",
@@ -15,8 +13,6 @@ const enderecosMock = [
   {
     id: 2,
     logradouro: "Av. Inovação",
-    numero: "500",
-    complemento: "",
     cidade: "Porto Alegre",
     estado: "RS",
     cep: "90000-000",
@@ -24,8 +20,6 @@ const enderecosMock = [
   {
     id: 3,
     logradouro: "Rodovia Tech",
-    numero: "Km 45",
-    complemento: "Box 3",
     cidade: "Jundiaí",
     estado: "SP",
     cep: "13200-000",
@@ -39,6 +33,8 @@ const fabricantesMock = [
     nome: "Dell",
     cnpj: "00.000.000/0001-00",
     enderecoId: 1,
+    numero: "123",
+    complemento: "Sala 01",
   },
   {
     id: 2,
@@ -46,6 +42,8 @@ const fabricantesMock = [
     nome: "HP",
     cnpj: "11.111.111/0001-11",
     enderecoId: 2,
+    numero: "500",
+    complemento: "",
   },
   {
     id: 3,
@@ -53,6 +51,8 @@ const fabricantesMock = [
     nome: "Logitech",
     cnpj: "22.222.222/0001-22",
     enderecoId: 3,
+    numero: "Km 45",
+    complemento: "Box 3",
   },
 ];
 
@@ -123,7 +123,7 @@ export default function App() {
   const [fabricantes, setFabricantes] = useState(fabricantesMock);
   const [equipamentos, setEquipamentos] = useState(equipamentosMock);
 
-  // Endereços (centralizados)
+  // Endereços (centralizados) — sem número/complemento
   const [enderecos, setEnderecos] = useState(enderecosMock);
 
   // Novos dados: unidades e características técnicas
@@ -153,6 +153,8 @@ export default function App() {
     nome: "",
     cnpj: "",
     enderecoId: "", // referenciar um endereço do cadastro
+    numero: "",
+    complemento: "",
   });
 
   const [equipamentoForm, setEquipamentoForm] = useState({
@@ -174,8 +176,6 @@ export default function App() {
   // Endereço form (usado para cadastro geral e para "novo endereço inline" em fabricante)
   const [enderecoForm, setEnderecoForm] = useState({
     logradouro: "",
-    numero: "",
-    complemento: "",
     cidade: "",
     estado: "",
     cep: "",
@@ -192,7 +192,7 @@ export default function App() {
     return nome.includes(termo) || codigo.includes(termo);
   });
 
-  // ATUALIZADO: Agora filtra também pelos campos de endereço nos fabricantes
+  // ATUALIZADO: filtra também pelos campos de endereço nos fabricantes
   const fabricantesFiltrados = fabricantes.filter((f) => {
     const s = search.toLowerCase();
     const nome = f.nome ? f.nome.toLowerCase() : "";
@@ -228,6 +228,7 @@ export default function App() {
       id: Date.now(),
       ...fabricanteForm,
       enderecoId,
+      // numero/complemento já fazem parte do fabricanteForm
     };
 
     setFabricantes((prev) => [...prev, novo]);
@@ -237,14 +238,14 @@ export default function App() {
       nome: "",
       cnpj: "",
       enderecoId: "",
+      numero: "",
+      complemento: "",
     });
     // esconder inline caso estivesse aberto
     setShowInlineEndereco(false);
     // reset endereçoForm (só por segurança)
     setEnderecoForm({
       logradouro: "",
-      numero: "",
-      complemento: "",
       cidade: "",
       estado: "",
       cep: "",
@@ -327,8 +328,6 @@ export default function App() {
     const novo = {
       id: Date.now(),
       logradouro: e.logradouro.trim(),
-      numero: e.numero.trim(),
-      complemento: e.complemento.trim(),
       cidade: e.cidade.trim(),
       estado: e.estado.trim(),
       cep: e.cep.trim(),
@@ -344,8 +343,6 @@ export default function App() {
     // reset form
     setEnderecoForm({
       logradouro: "",
-      numero: "",
-      complemento: "",
       cidade: "",
       estado: "",
       cep: "",
@@ -743,7 +740,7 @@ export default function App() {
                       <option value="">Selecione um endereço cadastrado</option>
                       {enderecos.map((en) => (
                         <option key={en.id} value={en.id}>
-                          {en.logradouro}, {en.numero} — {en.cidade}/{en.estado}
+                          {en.logradouro} — {en.cidade}/{en.estado}
                         </option>
                       ))}
                     </select>
@@ -762,7 +759,7 @@ export default function App() {
                   {/* Inline endereço (aparece quando user clica) */}
                   {showInlineEndereco && (
                     <div className="md:col-span-2 bg-gray-50 p-4 rounded border">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <input
                           placeholder="Logradouro"
                           className="p-2 border rounded col-span-2"
@@ -771,23 +768,7 @@ export default function App() {
                             setEnderecoForm({ ...enderecoForm, logradouro: e.target.value })
                           }
                         />
-                        <input
-                          placeholder="Número"
-                          className="p-2 border rounded"
-                          value={enderecoForm.numero}
-                          onChange={(e) =>
-                            setEnderecoForm({ ...enderecoForm, numero: e.target.value })
-                          }
-                        />
 
-                        <input
-                          placeholder="Complemento"
-                          className="p-2 border rounded col-span-2"
-                          value={enderecoForm.complemento}
-                          onChange={(e) =>
-                            setEnderecoForm({ ...enderecoForm, complemento: e.target.value })
-                          }
-                        />
                         <input
                           placeholder="CEP"
                           className="p-2 border rounded"
@@ -828,8 +809,6 @@ export default function App() {
                             setShowInlineEndereco(false);
                             setEnderecoForm({
                               logradouro: "",
-                              numero: "",
-                              complemento: "",
                               cidade: "",
                               estado: "",
                               cep: "",
@@ -841,6 +820,24 @@ export default function App() {
                       </div>
                     </div>
                   )}
+
+                  {/* Número + Complemento (sempre no formulário do fabricante) */}
+                  <input
+                    placeholder="Número"
+                    className="p-3 bg-gray-50 border rounded outline-none focus:ring-2 focus:ring-blue-200"
+                    value={fabricanteForm.numero}
+                    onChange={(e) =>
+                      setFabricanteForm({ ...fabricanteForm, numero: e.target.value })
+                    }
+                  />
+                  <input
+                    placeholder="Complemento"
+                    className="p-3 bg-gray-50 border rounded outline-none focus:ring-2 focus:ring-blue-200"
+                    value={fabricanteForm.complemento}
+                    onChange={(e) =>
+                      setFabricanteForm({ ...fabricanteForm, complemento: e.target.value })
+                    }
+                  />
                 </div>
 
                 <button
@@ -903,6 +900,8 @@ export default function App() {
                                   nome: f.nome,
                                   cnpj: f.cnpj,
                                   enderecoId: f.enderecoId ?? "",
+                                  numero: f.numero ?? "",
+                                  complemento: f.complemento ?? "",
                                 });
                                 window.scrollTo({ top: 0, behavior: "smooth" });
                               }}
@@ -914,13 +913,10 @@ export default function App() {
 
                         {f.enderecoId && findEndereco(f.enderecoId) && (
                           <div className="mt-3 text-sm text-gray-600 bg-blue-50/50 p-2 rounded border border-blue-100 flex items-center gap-2">
-                            📍 {findEndereco(f.enderecoId).logradouro},{" "}
-                            {findEndereco(f.enderecoId).numero}{" "}
-                            {findEndereco(f.enderecoId).complemento
-                              ? `- ${findEndereco(f.enderecoId).complemento}`
-                              : ""}
-                            , {findEndereco(f.enderecoId).cidade} -{" "}
-                            {findEndereco(f.enderecoId).estado} • CEP:{" "}
+                            📍 {findEndereco(f.enderecoId).logradouro}
+                            {f.numero ? `, ${f.numero}` : ""}{" "}
+                            {f.complemento ? `- ${f.complemento}` : ""} •{" "}
+                            {findEndereco(f.enderecoId).cidade} - {findEndereco(f.enderecoId).estado} • CEP:{" "}
                             {findEndereco(f.enderecoId).cep}
                           </div>
                         )}
@@ -1103,19 +1099,6 @@ export default function App() {
                     onChange={(e) => setEnderecoForm({ ...enderecoForm, logradouro: e.target.value })}
                   />
                   <input
-                    placeholder="Número"
-                    className="p-2 border rounded"
-                    value={enderecoForm.numero}
-                    onChange={(e) => setEnderecoForm({ ...enderecoForm, numero: e.target.value })}
-                  />
-
-                  <input
-                    placeholder="Complemento"
-                    className="p-2 border rounded col-span-2"
-                    value={enderecoForm.complemento}
-                    onChange={(e) => setEnderecoForm({ ...enderecoForm, complemento: e.target.value })}
-                  />
-                  <input
                     placeholder="CEP"
                     className="p-2 border rounded"
                     value={enderecoForm.cep}
@@ -1148,8 +1131,6 @@ export default function App() {
                     onClick={() =>
                       setEnderecoForm({
                         logradouro: "",
-                        numero: "",
-                        complemento: "",
                         cidade: "",
                         estado: "",
                         cep: "",
@@ -1170,7 +1151,7 @@ export default function App() {
                   enderecos.map((en) => (
                     <div key={en.id} className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm flex justify-between items-center">
                       <div>
-                        <div className="font-medium text-gray-800">{en.logradouro}, {en.numero} {en.complemento ? `- ${en.complemento}` : ""}</div>
+                        <div className="font-medium text-gray-800">{en.logradouro}</div>
                         <div className="text-sm text-gray-500">{en.cidade} - {en.estado} • CEP: {en.cep}</div>
                       </div>
 
@@ -1181,8 +1162,6 @@ export default function App() {
                             // pré-visualizar/editar no form principal de endereços
                             setEnderecoForm({
                               logradouro: en.logradouro,
-                              numero: en.numero,
-                              complemento: en.complemento,
                               cidade: en.cidade,
                               estado: en.estado,
                               cep: en.cep,
