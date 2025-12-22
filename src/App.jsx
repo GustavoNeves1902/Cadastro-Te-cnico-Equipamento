@@ -3,115 +3,19 @@ import { useState, useEffect } from "react";
 // --- DADOS MOCKADOS (Carregados inicialmente) ---
 // Endereços (agora sem número/complemento — só os campos globais)
 const enderecosMock = [
-  {
-    id: 1,
-    logradouro: "Rua Tech",
-    cidade: "São Paulo",
-    estado: "SP",
-    cep: "01000-000",
-  },
-  {
-    id: 2,
-    logradouro: "Av. Inovação",
-    cidade: "Porto Alegre",
-    estado: "RS",
-    cep: "90000-000",
-  },
-  {
-    id: 3,
-    logradouro: "Rodovia Tech",
-    cidade: "Jundiaí",
-    estado: "SP",
-    cep: "13200-000",
-  },
+  
 ];
 
 const fabricantesMock = [
-  {
-    id: 1,
-    codigo: "FAB001",
-    nome: "Dell",
-    cnpj: "00.000.000/0001-00",
-    enderecoId: 1,
-    numero: "123",
-    complemento: "Sala 01",
-  },
-  {
-    id: 2,
-    codigo: "FAB002",
-    nome: "HP",
-    cnpj: "11.111.111/0001-11",
-    enderecoId: 2,
-    numero: "500",
-    complemento: "",
-  },
-  {
-    id: 3,
-    codigo: "FAB003",
-    nome: "Logitech",
-    cnpj: "22.222.222/0001-22",
-    enderecoId: 3,
-    numero: "Km 45",
-    complemento: "Box 3",
-  },
+ 
 ];
 
 const tiposEquipamentoMock = [
-  { id: 1, nome: "Notebook" },
-  { id: 2, nome: "Desktop" },
-  { id: 3, nome: "Monitor" },
-  { id: 4, nome: "Periférico" },
+ 
 ];
 
 const equipamentosMock = [
-  {
-    id: 1,
-    codigo: "EQ001",
-    nome: "Latitude 5420",
-    tipoId: 1, // Notebook
-    fabricanteId: 1, // Dell
-    caracteristicas: [],
-  },
-  {
-    id: 2,
-    codigo: "EQ002",
-    nome: "ProDesk 400",
-    tipoId: 2, // Desktop
-    fabricanteId: 2, // HP
-    caracteristicas: [],
-  },
-  {
-    id: 3,
-    codigo: "EQ003",
-    nome: "Monitor P2419H",
-    tipoId: 3, // Monitor
-    fabricanteId: 1, // Dell
-    caracteristicas: [],
-  },
-  {
-    id: 4,
-    codigo: "EQ004",
-    nome: "Mouse MX Master 3",
-    tipoId: 4, // Periférico
-    fabricanteId: 3, // Logitech
-    caracteristicas: [],
-  },
-  {
-    id: 5,
-    codigo: "EQ005",
-    nome: "Vostro 3510",
-    tipoId: 1, // Notebook
-    fabricanteId: 1, // Dell
-    caracteristicas: [],
-  },
-  {
-    id: 6,
-    codigo: "EQ006",
-    nome: "Teclado Mecânico K835",
-    tipoId: 4, // Periférico
-    fabricanteId: 3, // Logitech
-    caracteristicas: [],
-  },
+   
 ];
 // ------------------------------------------------------------------
 
@@ -283,16 +187,21 @@ export default function App() {
     const nome = f.nome ? f.nome.toLowerCase() : "";
     const codigo = f.codigo ? f.codigo.toLowerCase() : "";
     const cnpj = f.cnpj ? f.cnpj.toLowerCase() : "";
+    // Resolve endereço do fabricante tanto pelo campo local enderecoId
+    // quanto pela estrutura retornada pela API (enderecoResidencial.endereco)
+    const enderecoId = f.enderecoId ?? f?.enderecoResidencial?.endereco?.id ?? f?.endereco?.id ?? null;
+    const enderecoObj = enderecoId
+      ? enderecos.find((en) => en.id === Number(enderecoId))
+      : (f?.enderecoResidencial?.endereco ?? null);
 
-    const enderecoObj = enderecos.find((en) => en.id === f.enderecoId);
-    const logradouro = enderecoObj?.logradouro 
-      ? (typeof enderecoObj.logradouro === 'object' ? enderecoObj.logradouro?.nome : enderecoObj.logradouro).toLowerCase() 
+    const logradouro = enderecoObj?.logradouro
+      ? (typeof enderecoObj.logradouro === 'object' ? enderecoObj.logradouro?.nome : enderecoObj.logradouro).toLowerCase()
       : "";
-    const cidade = enderecoObj?.cidade 
-      ? (typeof enderecoObj.cidade === 'object' ? enderecoObj.cidade?.nome : enderecoObj.cidade).toLowerCase() 
+    const cidade = enderecoObj?.cidade
+      ? (typeof enderecoObj.cidade === 'object' ? enderecoObj.cidade?.nome : enderecoObj.cidade).toLowerCase()
       : "";
-    const estado = enderecoObj?.estado 
-      ? (typeof enderecoObj.estado === 'object' ? enderecoObj.estado?.sigla : enderecoObj.estado).toLowerCase() 
+    const estado = enderecoObj?.estado
+      ? (typeof enderecoObj.estado === 'object' ? enderecoObj.estado?.sigla : enderecoObj.estado).toLowerCase()
       : "";
 
     return (
@@ -306,41 +215,72 @@ export default function App() {
   });
 
   // ---------- Funções de Cadastro ----------
-  function cadastrarFabricante() {
-    if (!fabricanteForm.nome || !fabricanteForm.codigo) {
-      alert("Preencha ao menos Código e Nome.");
+  async function cadastrarFabricante() {
+    if (!fabricanteForm.nome || !fabricanteForm.cnpj) {
+      alert("Preencha ao menos Nome e CNPJ.");
       return;
     }
 
-    // garantir que enderecoId seja number ou null
-    const enderecoId = fabricanteForm.enderecoId ? Number(fabricanteForm.enderecoId) : null;
+    if (!fabricanteForm.enderecoId) {
+      alert("Selecione um endereço.");
+      return;
+    }
 
-    const novo = {
-      id: Date.now(),
-      ...fabricanteForm,
-      enderecoId,
-      // numero/complemento já fazem parte do fabricanteForm
+    const payload = {
+      nome: fabricanteForm.nome.trim(),
+      nomeSocial: fabricanteForm.nome.trim(),
+      cnpj: fabricanteForm.cnpj.trim(),
+      enderecoResidencial: {
+        endereco: {
+          id: Number(fabricanteForm.enderecoId)
+        },
+        complemento: fabricanteForm.complemento || "",
+        nroCasa: fabricanteForm.numero || ""
+      },
+      fones: [],
+      emails: []
     };
 
-    setFabricantes((prev) => [...prev, novo]);
-    alert("Fabricante cadastrado!");
-    setFabricanteForm({
-      codigo: "",
-      nome: "",
-      cnpj: "",
-      enderecoId: "",
-      numero: "",
-      complemento: "",
-    });
-    // esconder inline caso estivesse aberto
-    setShowInlineEndereco(false);
-    // reset endereçoForm (só por segurança)
-    setEnderecoForm({
-      logradouro: "",
-      cidade: "",
-      estado: "",
-      cep: "",
-    });
+    try {
+      const resp = await fetch(
+        "http://34.9.38.255:8080/tecnico/fabricante/cadastrar",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      if (!resp.ok) {
+        const txt = await resp.text();
+        const errorMsg = txt.includes("<!doctype") ? "Erro no servidor - verifique o console" : txt;
+        alert("Erro ao cadastrar fabricante: " + errorMsg.substring(0, 200));
+        return;
+      }
+
+      const salvo = await resp.json();
+      setFabricantes((prev) => [...prev, salvo]);
+      alert("Fabricante cadastrado com sucesso!");
+      setFabricanteForm({
+        codigo: "",
+        nome: "",
+        cnpj: "",
+        enderecoId: "",
+        numero: "",
+        complemento: "",
+      });
+      // esconder inline caso estivesse aberto
+      setShowInlineEndereco(false);
+      // reset endereçoForm (só por segurança)
+      setEnderecoForm({
+        logradouro: "",
+        cidade: "",
+        estado: "",
+        cep: "",
+      });
+    } catch (e) {
+      alert("Erro de rede ao cadastrar fabricante: " + e.message);
+    }
   }
 
   async function cadastrarEquipamento() {
@@ -682,6 +622,17 @@ export default function App() {
     return enderecos.find((e) => e.id === Number(enderecoId)) ?? null;
   }
 
+  // Resolve o objeto de endereço para um fabricante, compatível com dados locais e da API
+  function resolveFabricanteEnderecoObj(f) {
+    const enderecoId = f.enderecoId ?? f?.enderecoResidencial?.endereco?.id ?? f?.endereco?.id ?? null;
+    if (enderecoId) {
+      const byId = findEndereco(enderecoId);
+      if (byId) return byId;
+    }
+    // Se não encontramos pelo ID na lista global, tenta usar o objeto embutido da API
+    return f?.enderecoResidencial?.endereco ?? null;
+  }
+
   // ---------- Render ----------
   return (
     <div className="min-h-screen bg-gray-400 flex items-center justify-center p-4 font-sans">
@@ -831,102 +782,125 @@ export default function App() {
                 <div className="mt-4">
                   <h3 className="text-md font-bold mb-2">Características Técnicas</h3>
 
-                  <div className="flex gap-2 items-center">
-                    <select
-                      className="p-2 border rounded flex-1"
-                      onChange={(e) => {
-                        const id = Number(e.target.value);
-                        if (!id) return;
-                        const item = caracteristicas.find((c) => c.id === id);
-                        if (!item) return;
-
-                        // Evitar duplicado
-                        if (equipamentoForm.caracteristicas.some((c) => c.id === id)) {
-                          alert("Essa característica já foi adicionada!");
-                          return;
-                        }
-
-                        // Adiciona um clone da característica com campo 'valor' vazio
-                        // Garante que unidadeId está presente
-                        setEquipamentoForm({
-                          ...equipamentoForm,
-                          caracteristicas: [
-                            ...equipamentoForm.caracteristicas,
-                            { 
-                              id: item.id,
-                              nome: item.nome,
-                              unidadeId: item.unidadeId,
-                              valor: ""
-                            },
-                          ],
-                        });
-
-                        // reset select (opcional)
-                        e.target.value = "";
-                      }}
-                    >
-                      <option value="">Selecione característica...</option>
-                      {caracteristicas.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.nome} ({findUnidadeNome(c.unidadeId)})
-                        </option>
-                      ))}
-                    </select>
-
-                    <button
-                      className="px-4 py-2 bg-blue-600 text-white rounded"
-                      onClick={() => {
-                        // quick way to open Configurações
-                        setTab("config");
-                      }}
-                    >
-                      + Nova característica
-                    </button>
-                  </div>
-
-                  <ul className="mt-3 bg-gray-50 p-3 rounded border">
+                  <div className="space-y-3 bg-gray-50 p-3 rounded border">
                     {equipamentoForm.caracteristicas.length === 0 && (
-                      <li className="text-sm text-gray-500">Nenhuma característica adicionada.</li>
+                      <p className="text-sm text-gray-500">Nenhuma característica adicionada.</p>
                     )}
 
-                    {equipamentoForm.caracteristicas.map((c) => (
-                      <li key={c.id} className="flex gap-3 items-center mb-2">
-                        <div className="flex-1">
+                    {equipamentoForm.caracteristicas.map((c, idx) => (
+                      <div key={idx} className="bg-white p-3 rounded border">
+                        <div className="flex justify-between items-start mb-2">
                           <div className="font-medium text-gray-800">
-                            {c.nome} <span className="text-xs text-gray-500">({findUnidadeNome(c.unidadeId)})</span>
+                            {c.nome || "Característica sem nome"}
                           </div>
-                          <input
-                            className="mt-1 p-2 border rounded w-full"
-                            placeholder={`Valor (${findUnidadeNome(c.unidadeId)})`}
-                            value={c.valor ?? ""}
-                            onChange={(e) => {
-                              const newVal = e.target.value;
-                              setEquipamentoForm((prev) => ({
-                                ...prev,
-                                caracteristicas: prev.caracteristicas.map((cc) =>
-                                  cc.id === c.id ? { ...cc, valor: newVal } : cc
+                          <button
+                            className="text-red-500 text-sm"
+                            onClick={() =>
+                              setEquipamentoForm({
+                                ...equipamentoForm,
+                                caracteristicas: equipamentoForm.caracteristicas.filter(
+                                  (_, i) => i !== idx
                                 ),
-                              }));
-                            }}
-                          />
+                              })
+                            }
+                          >
+                            Remover
+                          </button>
                         </div>
 
-                        <button
-                          className="text-red-500 text-sm"
-                          onClick={() =>
-                            setEquipamentoForm({
-                              ...equipamentoForm,
-                              caracteristicas: equipamentoForm.caracteristicas.filter(
-                                (x) => x.id !== c.id
-                              ),
-                            })
-                          }
-                        >
-                          Remover
-                        </button>
-                      </li>
+                        {/* Se não tiver nome, mostrar dropdown para selecionar */}
+                        {!c.nome && (
+                          <select
+                            className="w-full p-2 border rounded bg-white mb-2"
+                            onChange={(e) => {
+                              const selectedId = Number(e.target.value);
+                              if (!selectedId) return;
+                              const item = caracteristicas.find((car) => car.id === selectedId);
+                              if (!item) return;
+
+                              setEquipamentoForm((prev) => ({
+                                ...prev,
+                                caracteristicas: prev.caracteristicas.map((car, i) =>
+                                  i === idx
+                                    ? { ...car, id: item.id, nome: item.nome, unidadeId: item.unidadeId || null }
+                                    : car
+                                )
+                              }));
+                              e.target.value = "";
+                            }}
+                          >
+                            <option value="">Selecione característica...</option>
+                            {caracteristicas.map((car) => (
+                              <option key={car.id} value={car.id}>
+                                {car.nome}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+
+                        {/* Mostrar campos de unidade e valor apenas se tiver nome */}
+                        {c.nome && (
+                          <div className="flex gap-2">
+                            <select
+                              className="p-2 border rounded flex-1"
+                              value={c.unidadeId ?? ""}
+                              onChange={(e) => {
+                                const newUnidadeId = Number(e.target.value) || null;
+                                setEquipamentoForm((prev) => ({
+                                  ...prev,
+                                  caracteristicas: prev.caracteristicas.map((cc, i) =>
+                                    i === idx ? { ...cc, unidadeId: newUnidadeId } : cc
+                                  ),
+                                }));
+                              }}
+                            >
+                              <option value="">Selecione unidade</option>
+                              {unidades.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.nome}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              className="p-2 border rounded flex-1"
+                              type="number"
+                              placeholder="Valor"
+                              value={c.valor ?? ""}
+                              onChange={(e) => {
+                                const newVal = e.target.value;
+                                setEquipamentoForm((prev) => ({
+                                  ...prev,
+                                  caracteristicas: prev.caracteristicas.map((cc, i) =>
+                                    i === idx ? { ...cc, valor: newVal } : cc
+                                  ),
+                                }));
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     ))}
-                  </ul>
+                  </div>
+
+                  <button
+                    className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
+                    onClick={() => {
+                      setEquipamentoForm({
+                        ...equipamentoForm,
+                        caracteristicas: [
+                          ...equipamentoForm.caracteristicas,
+                          {
+                            id: null,
+                            nome: "",
+                            unidadeId: null,
+                            valor: ""
+                          }
+                        ]
+                      });
+                    }}
+                  >
+                    + Novo Campo de Característica
+                  </button>
                 </div>
 
                 <button
@@ -1042,17 +1016,6 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                   <input
                     className="p-3 bg-gray-50 border rounded outline-none focus:ring-2 focus:ring-blue-200"
-                    placeholder="Código"
-                    value={fabricanteForm.codigo}
-                    onChange={(e) =>
-                      setFabricanteForm({
-                        ...fabricanteForm,
-                        codigo: e.target.value,
-                      })
-                    }
-                  />
-                  <input
-                    className="p-3 bg-gray-50 border rounded outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="Nome"
                     value={fabricanteForm.nome}
                     onChange={(e) =>
@@ -1063,7 +1026,7 @@ export default function App() {
                     }
                   />
                   <input
-                    className="p-3 bg-gray-50 border rounded outline-none focus:ring-2 focus:ring-blue-200 md:col-span-2"
+                    className="p-3 bg-gray-50 border rounded outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="CNPJ"
                     value={fabricanteForm.cnpj}
                     onChange={(e) =>
@@ -1245,10 +1208,9 @@ export default function App() {
                               onClick={() => {
                                 // quick edit: preenche o formulário com os dados do fabricante
                                 setFabricanteForm({
-                                  codigo: f.codigo,
                                   nome: f.nome,
                                   cnpj: f.cnpj,
-                                  enderecoId: f.enderecoId ?? "",
+                                  enderecoId: (f.enderecoId ?? f?.enderecoResidencial?.endereco?.id ?? ""),
                                   numero: f.numero ?? "",
                                   complemento: f.complemento ?? "",
                                 });
@@ -1260,19 +1222,25 @@ export default function App() {
                           </div>
                         </div>
 
-                        {f.enderecoId && findEndereco(f.enderecoId) && (
-                          <div className="mt-3 text-sm text-gray-600 bg-blue-50/50 p-2 rounded border border-blue-100 flex items-center gap-2">
-                            📍 {typeof findEndereco(f.enderecoId).logradouro === 'object' ? findEndereco(f.enderecoId).logradouro?.nome : findEndereco(f.enderecoId).logradouro}
-                            {f.numero ? `, ${f.numero}` : ""}{" "}
-                            {f.complemento ? `- ${f.complemento}` : ""} •{" "}
-                            {typeof findEndereco(f.enderecoId).cidade === 'object' ? findEndereco(f.enderecoId).cidade?.nome : findEndereco(f.enderecoId).cidade} - {typeof findEndereco(f.enderecoId).estado === 'object' ? findEndereco(f.enderecoId).estado?.sigla : findEndereco(f.enderecoId).estado} • CEP:{" "}
-                            {findEndereco(f.enderecoId).cep}
-                          </div>
-                        )}
-
-                        {!f.enderecoId && (
-                          <div className="mt-3 text-sm text-gray-500">Sem endereço associado</div>
-                        )}
+                        {(() => {
+                          const end = resolveFabricanteEnderecoObj(f);
+                          if (!end) {
+                            return (
+                              <div className="mt-3 text-sm text-gray-500">Sem endereço associado</div>
+                            );
+                          }
+                          const logradouro = typeof end.logradouro === 'object' ? end.logradouro?.nome : end.logradouro;
+                          const cidade = typeof end.cidade === 'object' ? end.cidade?.nome : end.cidade;
+                          const estado = typeof end.estado === 'object' ? end.estado?.sigla : end.estado;
+                          const cep = end.cep;
+                          return (
+                            <div className="mt-3 text-sm text-gray-600 bg-blue-50/50 p-2 rounded border border-blue-100 flex items-center gap-2">
+                              📍 {logradouro}
+                              {f.numero ? `, ${f.numero}` : ""}{" "}
+                              {f.complemento ? `- ${f.complemento}` : ""} • {cidade} - {estado} • CEP: {cep}
+                            </div>
+                          );
+                        })()}
                       </div>
                     ))
                   )}
