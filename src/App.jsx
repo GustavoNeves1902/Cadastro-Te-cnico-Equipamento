@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ChatbotPage from "./ChatbotPage";
 
 // --- DADOS MOCKADOS (Carregados inicialmente) ---
 // Endereços (agora sem número/complemento — só os campos globais)
@@ -698,6 +699,17 @@ export default function App() {
             }`}
           >
             Endereços
+          </button>
+
+          <button
+            onClick={() => setTab("chatbot")}
+            className={`flex-1 py-4 text-sm font-bold uppercase tracking-wider transition-all duration-200 border-b-4 ${
+              tab === "chatbot"
+                ? "border-blue-600 text-blue-800 bg-white"
+                : "border-transparent text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            Chatbot
           </button>
         </div>
 
@@ -1524,6 +1536,13 @@ export default function App() {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* --------- TAB CHATBOT --------- */}
+          {tab === "chatbot" && (
+            <div className="animate-fade-in">
+              <ChatbotPage />
             </div>
           )}
         </div>
